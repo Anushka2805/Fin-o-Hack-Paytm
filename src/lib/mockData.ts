@@ -15,10 +15,10 @@ export const transactions = [
 ];
 
 export const aiSuggestions = [
-  "Is ₹500 fair for this ride?",
-  "How much should I tip?",
-  "Is this merchant safe?",
-  "Best street food nearby?",
+  "Is ₹500 fair for an auto from Connaught Place to India Gate?",
+  "How much should I tip at a restaurant?",
+  "A merchant wants me to pay on a different app — is that safe?",
+  "My transaction failed but money was deducted — what do I do?",
 ];
 
 export const countryFlags: Record<string, string> = {

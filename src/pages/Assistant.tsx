@@ -1,27 +1,22 @@
 import { motion } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Send, Bot, User } from "lucide-react";
+import { ArrowLeft, Send, Bot, User, AlertCircle } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
 import { BottomNav } from "@/components/BottomNav";
 import { aiSuggestions } from "@/lib/mockData";
+import { sendMessageToGemini } from "@/lib/gemini";
 
 interface Message {
   role: "user" | "assistant";
   text: string;
+  error?: boolean;
 }
-
-const aiResponses: Record<string, string> = {
-  "Is ₹500 fair for this ride?": "For a 5km auto-rickshaw ride in Delhi, ₹500 is quite high. Fair price would be ₹100-150. I'd suggest negotiating or using the meter. 🚕",
-  "How much should I tip?": "In India, tipping is appreciated but not mandatory. For restaurants, 10% is generous. For street food vendors, rounding up is common. For hotel staff, ₹50-100 per service is nice. 😊",
-  "Is this merchant safe?": "Sharma's Street Food has a 4.8/5 trust score with 2,300+ transactions. They've been verified by Paytm and have no disputes. You're safe! ✅",
-  "Best street food nearby?": "Near your location, I'd recommend: 1) Paranthe Wali Gali (₹80-120), 2) Karim's Kebabs (₹150-300), 3) Natraj Dahi Bhalle (₹60). All are Paytm verified! 🍛",
-};
 
 const Assistant = () => {
   const navigate = useNavigate();
   const [messages, setMessages] = useState<Message[]>([
-    { role: "assistant", text: "Hi! 👋 I'm your AI travel buddy for India. Ask me anything about prices, safety, or local tips!" },
+    { role: "assistant", text: "Hi! 👋 I'm your AI travel buddy for India. Ask me anything about prices, tipping, merchant safety, or what to do if a transaction fails!" },
   ]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
@@ -31,15 +26,19 @@ const Assistant = () => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, typing]);
 
-  const sendMessage = (text: string) => {
+  const sendMessage = async (text: string) => {
     setMessages((m) => [...m, { role: "user", text }]);
     setInput("");
     setTyping(true);
-    setTimeout(() => {
-      setTyping(false);
-      const response = aiResponses[text] || "That's a great question! Based on local data, I'd recommend checking with verified merchants on Paytm for the best rates. Stay safe and enjoy India! 🇮🇳";
+    try {
+      const response = await sendMessageToGemini(text);
       setMessages((m) => [...m, { role: "assistant", text: response }]);
-    }, 1500);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";
+      setMessages((m) => [...m, { role: "assistant", text: message, error: true }]);
+    } finally {
+      setTyping(false);
+    }
   };
 
   return (
@@ -54,7 +53,7 @@ const Assistant = () => {
             <Bot size={16} className="text-primary-foreground" />
           </div>
           <div>
-            <p className="text-sm font-bold text-foreground">AI Travel Buddy</p>
+            <p className="text-sm font-bold text-foreground">AI Travel Assistant</p>
             <p className="text-[10px] text-success font-medium">Online</p>
           </div>
         </div>
@@ -77,9 +76,12 @@ const Assistant = () => {
                 className={`max-w-[80%] px-4 py-2.5 rounded-2xl text-sm ${
                   msg.role === "user"
                     ? "gradient-primary text-primary-foreground rounded-br-md"
+                    : msg.error
+                    ? "bg-destructive/10 border border-destructive/30 text-destructive rounded-bl-md flex items-start gap-2"
                     : "bg-card shadow-soft text-foreground rounded-bl-md"
                 }`}
               >
+                {msg.error && <AlertCircle size={14} className="shrink-0 mt-0.5" />}
                 {msg.text}
               </div>
               {msg.role === "user" && (
