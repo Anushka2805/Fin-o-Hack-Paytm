@@ -2,9 +2,15 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Plus, CreditCard, Shield } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
+import { useWallet } from "@/context/WalletContext";
 
 const Wallet = () => {
   const navigate = useNavigate();
+  const { wallet } = useWallet();
+  const balance = wallet?.balanceInr ?? 0;
+  const exchangeRate = wallet?.exchangeRate ?? 83.42;
+  const name = wallet?.user.name ?? "John Anderson";
+  const flag = wallet?.user.countryFlag ?? "🇺🇸";
 
   return (
     <PageTransition>
@@ -27,14 +33,14 @@ const Wallet = () => {
           <div className="relative flex justify-between items-start">
             <div>
               <p className="text-primary-foreground/70 text-xs">Tourist Wallet</p>
-              <p className="text-primary-foreground font-bold text-lg mt-1">John Anderson 🇺🇸</p>
+              <p className="text-primary-foreground font-bold text-lg mt-1">{name} {flag}</p>
             </div>
             <CreditCard className="text-primary-foreground/50" size={24} />
           </div>
           <div className="relative">
             <p className="text-primary-foreground/70 text-xs">Balance</p>
-            <p className="text-primary-foreground font-bold text-3xl">₹0.00</p>
-            <p className="text-primary-foreground/60 text-sm">≈ $0.00 USD</p>
+            <p className="text-primary-foreground font-bold text-3xl">₹{balance.toFixed(2)}</p>
+            <p className="text-primary-foreground/60 text-sm">≈ ${(balance / exchangeRate).toFixed(2)} USD</p>
           </div>
         </motion.div>
 
@@ -63,3 +69,4 @@ const Wallet = () => {
 };
 
 export default Wallet;
+

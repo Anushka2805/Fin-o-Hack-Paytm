@@ -3,15 +3,34 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, CreditCard, Heart, Check, Plane } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
-import { exchangeRate } from "@/lib/mockData";
+import { useWallet } from "@/context/WalletContext";
 
 const ExitTrip = () => {
   const navigate = useNavigate();
+  const { wallet, exitTrip } = useWallet();
   const [choice, setChoice] = useState<"refund" | "donate" | null>(null);
   const [done, setDone] = useState(false);
-  const remaining = 2041;
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [settled, setSettled] = useState<{ remainingInr: number; remainingUsd: number } | null>(null);
 
-  const handleConfirm = () => setDone(true);
+  const remaining = wallet?.balanceInr ?? 0;
+  const exchangeRate = wallet?.exchangeRate ?? 83.42;
+
+  const handleConfirm = async () => {
+    if (!choice || submitting) return;
+    setSubmitting(true);
+    setErrorMsg(null);
+    try {
+      const result = await exitTrip(choice);
+      setSettled(result);
+      setDone(true);
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "Something went wrong, please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <PageTransition>
@@ -73,15 +92,17 @@ const ExitTrip = () => {
                 </motion.button>
               </div>
 
+              {errorMsg && <p className="text-xs text-destructive text-center">{errorMsg}</p>}
+
               <motion.button
                 whileTap={{ scale: 0.98 }}
                 onClick={handleConfirm}
-                disabled={!choice}
+                disabled={!choice || submitting}
                 className={`w-full py-3.5 rounded-xl font-semibold mt-auto transition-all ${
                   choice ? "gradient-primary text-primary-foreground shadow-glow" : "bg-muted text-muted-foreground"
-                }`}
+                } disabled:opacity-60`}
               >
-                Confirm
+                {submitting ? "Processing…" : "Confirm"}
               </motion.button>
             </motion.div>
           ) : (
@@ -100,8 +121,8 @@ const ExitTrip = () => {
                 </h2>
                 <p className="text-sm text-muted-foreground">
                   {choice === "donate"
-                    ? "₹" + remaining + " will support children's education"
-                    : "$" + (remaining / exchangeRate).toFixed(2) + " will be refunded in 2-3 days"}
+                    ? "₹" + (settled?.remainingInr ?? remaining).toFixed(2) + " will support children's education"
+                    : "$" + (settled?.remainingUsd ?? remaining / exchangeRate).toFixed(2) + " will be refunded in 2-3 days"}
                 </p>
               </div>
               <p className="text-lg font-bold text-foreground">Safe travels! ✈️🇮🇳</p>
@@ -121,3 +142,4 @@ const ExitTrip = () => {
 };
 
 export default ExitTrip;
+

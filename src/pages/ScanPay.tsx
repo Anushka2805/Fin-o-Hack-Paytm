@@ -4,19 +4,46 @@ import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Star, AlertTriangle, Shield } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
 import { BottomNav } from "@/components/BottomNav";
-import { merchants, exchangeRate } from "@/lib/mockData";
+import { useWallet } from "@/context/WalletContext";
 
 const ScanPay = () => {
   const navigate = useNavigate();
+  const { wallet, merchants, pay } = useWallet();
   const [scanned, setScanned] = useState(false);
+  const [paying, setPaying] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const merchant = merchants[0];
   const payAmount = 500;
-  const isAnomaly = payAmount > merchant.avgPrice * 2;
+  const exchangeRate = wallet?.exchangeRate ?? 83.42;
+  const isAnomaly = merchant ? payAmount > merchant.avgPrice * 2 : false;
 
   useEffect(() => {
     const t = setTimeout(() => setScanned(true), 2500);
     return () => clearTimeout(t);
   }, []);
+
+  const handlePay = async () => {
+    if (!merchant || paying) return;
+    setPaying(true);
+    setErrorMsg(null);
+    try {
+      await pay(merchant.id, payAmount);
+      navigate("/success");
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "Payment failed, please try again.");
+      setPaying(false);
+    }
+  };
+
+  if (scanned && !merchant) {
+    return (
+      <PageTransition>
+        <div className="min-h-screen flex items-center justify-center p-6 text-center text-sm text-muted-foreground">
+          Loading merchant details…
+        </div>
+      </PageTransition>
+    );
+  }
 
   return (
     <PageTransition>
@@ -94,13 +121,16 @@ const ScanPay = () => {
                 </motion.div>
               )}
 
+              {errorMsg && <p className="text-xs text-destructive text-center">{errorMsg}</p>}
+
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => navigate("/success")}
-                className="gradient-primary text-primary-foreground py-3.5 rounded-xl font-semibold shadow-glow mt-auto"
+                onClick={handlePay}
+                disabled={paying}
+                className="gradient-primary text-primary-foreground py-3.5 rounded-xl font-semibold shadow-glow mt-auto disabled:opacity-60"
               >
-                Pay ₹{payAmount} Now
+                {paying ? "Processing…" : `Pay ₹${payAmount} Now`}
               </motion.button>
             </motion.div>
           )}

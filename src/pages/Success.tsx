@@ -2,11 +2,16 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { Check, MessageCircle, ArrowRight } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
-import { exchangeRate } from "@/lib/mockData";
+import { useWallet } from "@/context/WalletContext";
 
 const Success = () => {
   const navigate = useNavigate();
-  const amount = 500;
+  const { wallet, transactions } = useWallet();
+  const exchangeRate = wallet?.exchangeRate ?? 83.42;
+  const lastTx = transactions.find((t) => t.type === "payment") ?? transactions[0];
+  const amount = lastTx?.amountInr ?? 500;
+  const merchantName = lastTx?.merchant ?? "Merchant";
+  const withinRange = !lastTx?.flaggedAnomaly;
 
   return (
     <PageTransition>
@@ -60,11 +65,13 @@ const Success = () => {
           </div>
           <div className="flex justify-between">
             <span className="text-sm text-muted-foreground">Merchant</span>
-            <span className="text-sm font-semibold text-foreground">Sharma's Street Food</span>
+            <span className="text-sm font-semibold text-foreground">{merchantName}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-sm text-muted-foreground">Fair Price</span>
-            <span className="text-sm font-semibold text-success">✓ Within range</span>
+            <span className={`text-sm font-semibold ${withinRange ? "text-success" : "text-warning"}`}>
+              {withinRange ? "✓ Within range" : "⚠ Above average"}
+            </span>
           </div>
           <div className="flex justify-between">
             <span className="text-sm text-muted-foreground">Savings</span>

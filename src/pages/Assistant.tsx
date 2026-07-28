@@ -5,7 +5,7 @@ import { ArrowLeft, Send, Bot, User, AlertCircle } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
 import { BottomNav } from "@/components/BottomNav";
 import { aiSuggestions } from "@/lib/mockData";
-import { sendMessageToGemini } from "@/lib/gemini";
+import { sendMessageToAssistant } from "@/lib/assistant";
 
 interface Message {
   role: "user" | "assistant";
@@ -31,7 +31,7 @@ const Assistant = () => {
     setInput("");
     setTyping(true);
     try {
-      const response = await sendMessageToGemini(text);
+      const response = await sendMessageToAssistant(text);
       setMessages((m) => [...m, { role: "assistant", text: response }]);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Something went wrong. Please try again.";

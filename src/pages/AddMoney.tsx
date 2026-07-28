@@ -3,16 +3,36 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowRightLeft, Info } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
-import { exchangeRate, fee } from "@/lib/mockData";
+import { useWallet } from "@/context/WalletContext";
 
 const AddMoney = () => {
   const navigate = useNavigate();
+  const { wallet, addMoney } = useWallet();
   const [amount, setAmount] = useState(50);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const presets = [20, 50, 100, 200];
+
+  const exchangeRate = wallet?.exchangeRate ?? 83.42;
+  const fee = wallet?.feeRate ?? 0.015;
 
   const inr = amount * exchangeRate;
   const feeAmount = inr * fee;
   const total = inr + feeAmount;
+
+  const handleLoadMoney = async () => {
+    if (amount <= 0 || submitting) return;
+    setSubmitting(true);
+    setErrorMsg(null);
+    try {
+      await addMoney(amount);
+      navigate("/dashboard");
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : "Something went wrong, please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <PageTransition>
@@ -86,13 +106,16 @@ const AddMoney = () => {
           Live rate · Updates every 30 seconds
         </div>
 
+        {errorMsg && <p className="text-xs text-destructive text-center mb-3">{errorMsg}</p>}
+
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
-          onClick={() => navigate("/dashboard")}
-          className="w-full gradient-primary text-primary-foreground py-3.5 rounded-xl font-semibold shadow-glow mt-auto"
+          onClick={handleLoadMoney}
+          disabled={submitting}
+          className="w-full gradient-primary text-primary-foreground py-3.5 rounded-xl font-semibold shadow-glow mt-auto disabled:opacity-60"
         >
-          Load ₹{total.toFixed(0)} to Wallet
+          {submitting ? "Loading…" : `Load ₹${total.toFixed(0)} to Wallet`}
         </motion.button>
       </div>
     </PageTransition>

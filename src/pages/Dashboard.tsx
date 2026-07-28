@@ -3,11 +3,31 @@ import { useNavigate } from "react-router-dom";
 import { Plus, QrCode, Plane, Sparkles } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
 import { BottomNav } from "@/components/BottomNav";
-import { transactions, exchangeRate } from "@/lib/mockData";
+import { useWallet } from "@/context/WalletContext";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const balance = 4171;
+  const { wallet, transactions, loading, error } = useWallet();
+  const balance = wallet?.balanceInr ?? 0;
+  const exchangeRate = wallet?.exchangeRate ?? 83.42;
+  const name = wallet?.user.name.split(" ")[0] ?? "Traveler";
+  const flag = wallet?.user.countryFlag ?? "";
+
+  if (loading) {
+    return (
+      <PageTransition>
+        <div className="min-h-screen flex items-center justify-center text-sm text-muted-foreground">Loading your wallet…</div>
+      </PageTransition>
+    );
+  }
+
+  if (error) {
+    return (
+      <PageTransition>
+        <div className="min-h-screen flex items-center justify-center p-6 text-center text-sm text-destructive">{error}</div>
+      </PageTransition>
+    );
+  }
 
   return (
     <PageTransition>
@@ -17,7 +37,7 @@ const Dashboard = () => {
           <div className="flex items-center justify-between mb-6">
             <div>
               <p className="text-sm text-muted-foreground">Welcome back</p>
-              <h1 className="text-xl font-bold text-foreground">John 🇺🇸</h1>
+              <h1 className="text-xl font-bold text-foreground">{name} {flag}</h1>
             </div>
             <motion.button
               whileTap={{ scale: 0.95 }}
@@ -88,8 +108,10 @@ const Dashboard = () => {
                   <p className="text-[10px] text-muted-foreground">{tx.category} · {tx.time}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-bold text-foreground">-₹{tx.amount}</p>
-                  <p className="text-[10px] text-muted-foreground">${tx.usd}</p>
+                  <p className="text-sm font-bold text-foreground">
+                    {tx.type === "topup" ? "+" : "-"}₹{tx.amountInr.toLocaleString()}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">${tx.amountUsd}</p>
                 </div>
               </motion.div>
             ))}
