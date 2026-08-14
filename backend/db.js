@@ -2,9 +2,16 @@ import { JSONFilePreset } from "lowdb/node";
 import path from "path";
 import { fileURLToPath } from "url";
 import { nanoid } from "nanoid";
+import fs from "fs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const dbFile = path.join(__dirname, "data", "db.json");
+const dataDir = path.join(__dirname, "data");
+const dbFile = path.join(dataDir, "db.json");
+
+// Ensure the data directory exists before lowdb tries to write into it
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
+}
 
 const defaultData = {
   user: {
